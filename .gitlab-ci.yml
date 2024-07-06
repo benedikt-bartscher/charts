@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://gitlab.com/gitlab-org/gitlab/-/raw/master/app/assets/javascripts/editor/schema/ci.json
+
+variables:
+  HELM_DIR: "${CI_PROJECT_DIR}/charts/sentry"
+
+include:
+  - file: templates/helm.yml
+    project: senbax/gitlabci/helm
+    ref: v0.7.4
+  - file: templates/semantic-release.yml
+    project: senbax/gitlabci/semantic-release
+    ref: v0.11.8
