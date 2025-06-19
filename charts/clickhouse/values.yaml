@@ -63,26 +63,13 @@ clickhouse:
   ## Prometheus Exporter / Metrics
   ##
   metrics:
-    enabled: false
-    image:
-      registry: docker.io
-      repository: f1yegor/clickhouse-exporter
-      tag: latest
-      pullPolicy: IfNotPresent
-      port: 9116
-
-    ## Metrics exporter resource requests and limits
-    # resources: {}
-
-    ## Additional Volumes
-    # volumes: []
-    # volumeMounts: []
+    enabled: true
+    port: 9116
 
     ## Metrics exporter pod Annotation and Labels
     podAnnotations:
       prometheus.io/scrape: "true"
       prometheus.io/port: "9116"
-    podLabels: {}
 
     ## Enable this if you're using https://github.com/coreos/prometheus-operator
     serviceMonitor:
@@ -103,7 +90,6 @@ clickhouse:
       namespace: ""
       rules: []
 
-
     service:
       type: ClusterIP
       ## Use serviceLoadBalancerIP to request a specific static IP,
@@ -118,6 +104,9 @@ clickhouse:
   ## Default value: /var/lib/clickhouse
   path: "/var/lib/clickhouse"
   ##
+  ## The host to listen on
+  listen_host: "0.0.0.0"
+  ##
   ## The port for connecting to the server over HTTP
   http_port: "8123"
   ##
@@ -130,8 +119,8 @@ clickhouse:
   ## The instance number of Clickhouse
   replicas: "3"
   ## Clickhouse image configuration.
-  image: "yandex/clickhouse-server"
-  imageVersion: "19.14"
+  image: "clickhouse/clickhouse-server"
+  imageVersion: ~
   imagePullPolicy: "IfNotPresent"
 
   priorityClassName: ~
@@ -139,22 +128,28 @@ clickhouse:
   ## The resource limits and requests used by clickhouse
   resources: {}
 
+  startupProbe:
+    enabled: true
+    periodSeconds: 5
+    timeoutSeconds: 5
+    failureThreshold: 60
+    successThreshold: 1
   livenessProbe:
     enabled: true
-    initialDelaySeconds: "30"
-    periodSeconds: "30"
-    timeoutSeconds: "5"
-    failureThreshold: "3"
-    successThreshold: "1"
+    initialDelaySeconds: 0
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
   ## Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails. Cannot be updated.
   ## More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes
   readinessProbe:
     enabled: true
-    initialDelaySeconds: "30"
-    periodSeconds: "30"
-    timeoutSeconds: "5"
-    failureThreshold: "3"
-    successThreshold: "1"
+    initialDelaySeconds: 0
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
   ## volumeClaimTemplates is a list of claims that pods are allowed to reference.
   ## The StatefulSet controller is responsible for mapping network identities to claims in a way that maintains the identity of a pod.
   ## Every claim in this list must have at least one matching (by name) volumeMount in one container in the template.

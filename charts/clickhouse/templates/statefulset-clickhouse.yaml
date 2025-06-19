@@ -69,19 +69,34 @@ spec:
     {{- end }}
       containers:
       - name: {{ include "clickhouse.fullname" . }}
-        image: {{ .Values.clickhouse.image }}:{{ .Values.clickhouse.imageVersion }}
+        image: {{ .Values.clickhouse.image }}:{{ .Values.clickhouse.imageVersion | default .Chart.AppVersion }}
         imagePullPolicy: {{ .Values.clickhouse.imagePullPolicy }}
         command:
           - /bin/bash
           - -c
           - export SHARD=${HOSTNAME##*-} && /entrypoint.sh
         ports:
+        {{- if .Values.clickhouse.metrics.enabled }}
+        - name: metrics
+          containerPort: {{ .Values.clickhouse.metrics.port }}
+          protocol: TCP
+        {{- end }}
         - name: http-port
           containerPort: {{ .Values.clickhouse.http_port | default "8123" }}
         - name: tcp-port
           containerPort: {{ .Values.clickhouse.tcp_port | default "9000" }}
         - name: inter-http-port
           containerPort: {{ .Values.clickhouse.interserver_http_port | default "9009" }}
+      {{- if .Values.clickhouse.startupProbe.enabled }}
+        startupProbe:
+          tcpSocket:
+            port: {{ .Values.clickhouse.tcp_port }}
+          initialDelaySeconds: {{ .Values.clickhouse.startupProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.clickhouse.startupProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.clickhouse.startupProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.clickhouse.startupProbe.failureThreshold }}
+          successThreshold: {{ .Values.clickhouse.startupProbe.successThreshold }}
+      {{- end }}
       {{- if .Values.clickhouse.livenessProbe.enabled }}
         livenessProbe:
           tcpSocket:
@@ -123,22 +138,6 @@ spec:
       {{- with .Values.clickhouse.securityContext }}
         securityContext:
           {{- toYaml . | nindent 10 }}
-      {{- end }}
-      {{- if .Values.clickhouse.metrics.enabled }}
-      - name: prom-exporter
-        image: "{{ .Values.clickhouse.metrics.image.registry }}/{{ .Values.clickhouse.metrics.image.repository }}:{{ .Values.clickhouse.metrics.image.tag }}"
-        imagePullPolicy: {{ .Values.clickhouse.metrics.image.pullPolicy | quote }}
-        ports:
-          - name: metrics
-            containerPort: {{ .Values.clickhouse.metrics.image.port }}
-            protocol: TCP
-{{- if .Values.clickhouse.metrics.volumeMounts }}
-        volumeMounts:
-{{ toYaml .Values.clickhouse.metrics.volumeMounts | indent 8 }}
-{{- end }}
-        {{- if .Values.clickhouse.metrics.resources }}
-        resources: {{- toYaml .Values.clickhouse.metrics.resources | nindent 10 }}
-      {{- end }}
       {{- end }}
     {{- if .Values.clickhouse.nodeSelector }}
       nodeSelector:

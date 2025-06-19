@@ -12,6 +12,9 @@ metadata:
     chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
     release: "{{ .Release.Name }}"
     heritage: "{{ .Release.Service }}"
+  {{- range $key, $value := .Values.ingress.labels }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
  annotations:
    {{- range $key, $value := .Values.ingress.annotations }}
      {{ $key }}: {{ $value | quote }}
@@ -142,6 +145,24 @@ spec:
           - path: {{ default "/" .Values.ingress.path }}api/{[1-9][0-9]*}/{(.*)}
         {{- else }}
           - path: {{ default "/" .Values.ingress.path }}api/[1-9][0-9]*/(.*)
+        {{- end }}
+            {{- if $ingressSupportsPathType }}
+            pathType: {{ $ingressPathType }}
+            {{- end }}
+            backend:
+              {{- if $ingressApiIsStable }}
+              service:
+                name: {{ template "sentry.fullname" . }}-relay
+                port:
+                  number: {{ template "relay.port" . }}
+              {{- else }}
+              serviceName: {{ template "sentry.fullname" . }}-relay
+              servicePort: {{ template "relay.port" . }}
+              {{- end }}
+        {{- if eq (default "nginx" .Values.ingress.regexPathStyle) "traefik" }}
+          - path: {{ default "/" .Values.ingress.path }}api/0/relays/{(.*)}
+        {{- else }}
+          - path: {{ default "/" .Values.ingress.path }}api/0/relays/(.*)
         {{- end }}
             {{- if $ingressSupportsPathType }}
             pathType: {{ $ingressPathType }}
